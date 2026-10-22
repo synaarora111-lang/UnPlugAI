@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnplugAI - Mindful AI Tracker & Detox Tool</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'breathe': 'breathe 10s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        breathe: {
+                            '0%, 100%': { transform: 'scale(1)', opacity: '0.8' },
+                            '50%': { transform: 'scale(1.25)', opacity: '0.3' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Smooth Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased selection:bg-emerald-500 selection:text-white flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 font-bold text-xl">
+                    <i data-lucide="brain-circuit" class="w-6 h-6 stroke-[2.5]"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
+                        Unplug<span class="text-emerald-400">AI</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Reclaim your human focus & agency</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <button id="mindfulGateBtn" class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-medium text-sm transition-all shadow-md hover:shadow-emerald-500/10 active:scale-95">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                    <span>Intentional Gate</span>
+                </button>
+                <button id="openLogModalBtn" class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-sm transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Log Usage</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+
+        <!-- Top Metrics Cards Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Daily Cap Card -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Daily AI Time</p>
+                        <h3 id="statTodayTime" class="text-2xl font-bold text-white mt-1">0 <span class="text-sm font-normal text-slate-400">mins</span></h3>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <i data-lucide="timer" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+                        <span>Daily Budget</span>
+                        <span id="statBudgetLabel">0 / 20 mins</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="statBudgetBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reflex / Lazy Usage Card -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Reflex Usage</p>
+                        <h3 id="statReflexPct" class="text-2xl font-bold text-white mt-1">0%</h3>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <i data-lucide="zap-off" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-slate-400">
+                    <span id="statReflexCount">0 out of 0 entries</span>
+                    <span class="text-amber-400 font-medium" id="statReflexSub">Target: &lt;15%</span>
+                </div>
+            </div>
+
+            <!-- Cognitive Streak Card -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Human Streak</p>
+                        <h3 id="statStreak" class="text-2xl font-bold text-white mt-1">0 <span class="text-sm font-normal text-slate-400">days</span></h3>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                        <i data-lucide="flame" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-slate-400">
+                    <span>Under Budget Days</span>
+                    <span class="text-sky-400 font-medium">Keep it going!</span>
+                </div>
+            </div>
+
+            <!-- Focus Time Reclaimed Card -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Saved Focus Time</p>
+                        <h3 id="statSavedTime" class="text-2xl font-bold text-white mt-1">0 <span class="text-sm font-normal text-slate-400">hrs</span></h3>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-slate-400">
+                    <span>Avoided AI dependence</span>
+                    <span class="text-purple-400 font-medium">+Deep Work</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Dashboard Split: Left Analytics / Right Gate & Badges -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left 2 Columns: Charts & Logs -->
+            <div class="lg:col-span-2 space-y-8">
+
+                <!-- Usage Chart Card -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5 text-emerald-400"></i>
+                                AI Usage Trend
+                            </h2>
+                            <p class="text-xs text-slate-400">Daily breakdown between Necessary vs Reflex AI usage</p>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-800/80 p-1 rounded-xl border border-slate-700/50">
+                            <button id="chartRangeWeek" class="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500 text-slate-950 transition-all">Last 7 Days</button>
+                            <button id="chartRangeMonth" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">Last 30 Days</button>
+                        </div>
+                    </div>
+                    <div class="h-64 relative w-full">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Quick Log List -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5 text-emerald-400"></i>
+                            Recent AI Usage Logs
+                        </h2>
+                        <button id="clearDataBtn" class="text-xs text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear All
+                        </button>
+                    </div>
+
+                    <!-- Logs Table / Container -->
+                    <div id="logsContainer" class="space-y-3">
+                        <!-- Dynamic content filled via JS -->
+                    </div>
+                </div>
+
+                <!-- Cognitive Wins Journal -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="award" class="w-5 h-5 text-sky-400"></i>
+                                Human First Wins Journal
+                            </h2>
+                            <p class="text-xs text-slate-400">Document instances where you chose critical thinking over AI generation</p>
+                        </div>
+                    </div>
+
+                    <form id="winForm" class="flex gap-2 mb-6">
+                        <input type="text" id="winInput" placeholder="e.g., Solved bug using documentation directly without ChatGPT..." required class="flex-1 bg-slate-800/60 border border-slate-700/70 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button type="submit" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-sm rounded-xl transition-all flex items-center gap-1.5 shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Save Win
+                        </button>
+                    </form>
+
+                    <div id="winsContainer" class="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                        <!-- Dynamic list of wins -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Intentional Gate Widget & Detox Challenges -->
+            <div class="space-y-8">
+
+                <!-- Intentional Gate Interactive Card -->
+                <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-900/90 border border-emerald-500/20 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <i data-lucide="pause-circle" class="w-5 h-5"></i>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-white text-base">The Friction Gate</h3>
+                            <p class="text-xs text-slate-400">Pause before opening ChatGPT/Claude</p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                        Reflexively using AI erodes creative intuition. Take 10 seconds to reflect before opening a generative tool.
+                    </p>
+
+                    <button id="triggerGateWidgetBtn" class="w-full py-3 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 group">
+                        <i data-lucide="play-circle" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                        Launch Mindful Friction Screen
+                    </button>
+                </div>
+
+                <!-- Daily Settings / Budget Controls -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-5 h-5 text-emerald-400"></i>
+                        Daily AI Budget Settings
+                    </h3>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <label class="text-slate-300 font-medium">Daily Max Limit</label>
+                            <span id="budgetValue" class="text-emerald-400 font-semibold">20 mins</span>
+                        </div>
+                        <input type="range" id="budgetRange" min="5" max="120" step="5" value="20" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>5m (Strict)</span>
+                            <span>30m (Balanced)</span>
+                            <span>2h (Relaxed)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detox Challenges & Badges -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-white text-base flex items-center gap-2">
+                            <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
+                            Cognitive Badges
+                        </h3>
+                        <span class="text-xs text-slate-400" id="badgeProgressCount">0/4 Unlocked</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3" id="badgesContainer">
+                        <!-- Dynamic Badges -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-900/50 py-6 mt-12 text-center text-xs text-slate-500">
+        <p>UnplugAI — Built for Cognitive Independence & Intentional Tech Use</p>
+    </footer>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal 1: Log Usage Modal -->
+    <div id="logModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform scale-95 transition-transform duration-200" id="logModalCard">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
+                    Log AI Tool Usage
+                </h3>
+                <button id="closeLogModalBtn" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="logForm" class="space-y-4">
+                <!-- AI Tool Select -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">AI Platform / Tool</label>
+                    <select id="logTool" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="ChatGPT">ChatGPT (OpenAI)</option>
+                        <option value="Claude">Claude (Anthropic)</option>
+                        <option value="Gemini">Gemini (Google)</option>
+                        <option value="Copilot">GitHub Copilot / Cursor</option>
+                        <option value="Perplexity">Perplexity AI</option>
+                        <option value="Midjourney">Midjourney / Image Gen</option>
+                        <option value="Other">Other Generative AI</option>
+                    </select>
+                </div>
+
+                <!-- Duration in Minutes -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Duration (Minutes)</label>
+                    <input type="number" id="logDuration" min="1" max="300" value="10" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Task Category</label>
+                    <select id="logCategory" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="Writing">Drafting & Writing</option>
+                        <option value="Coding">Coding & Debugging</option>
+                        <option value="Brainstorming">Brainstorming & Ideas</option>
+                        <option value="Search">Search & Fact Lookup</option>
+                        <option value="Summarization">Summarization & Reading</option>
+                    </select>
+                </div>
+
+                <!-- Intent (Reflex vs Necessary) -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2">Usage Intent</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-700 bg-slate-800/50 cursor-pointer hover:border-emerald-500/50 transition-all">
+                            <input type="radio" name="logIntent" value="Necessary" checked class="text-emerald-500 focus:ring-emerald-500">
+                            <div>
+                                <span class="text-xs font-semibold text-white block">Necessary</span>
+                                <span class="text-[10px] text-slate-400 block">Intentional task execution</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-700 bg-slate-800/50 cursor-pointer hover:border-amber-500/50 transition-all">
+                            <input type="radio" name="logIntent" value="Reflex" class="text-amber-500 focus:ring-amber-500">
+                            <div>
+                                <span class="text-xs font-semibold text-white block">Reflex / Lazy</span>
+                                <span class="text-[10px] text-slate-400 block">Autopilot habit impulse</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Short Description (Optional)</label>
+                    <input type="text" id="logNotes" placeholder="e.g., Asked for regex syntax..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="cancelLogBtn" class="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-800 transition-colors">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Mindful Intentionality Gate Simulator -->
+    <div id="gateModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-8 shadow-2xl space-y-6 text-center transform scale-95 transition-transform duration-300 relative overflow-hidden" id="gateModalCard">
+            
+            <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-500/10">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
+            </div>
+
+            <h2 class="text-2xl font-extrabold text-white">Intentionality Gate</h2>
+            <p class="text-xs text-slate-400 -mt-2">Take a moment to evaluate before accessing AI</p>
+
+            <!-- Breathing Circle -->
+            <div class="relative w-32 h-32 mx-auto flex items-center justify-center my-4">
+                <div class="absolute inset-0 rounded-full bg-emerald-500/20 animate-breathe"></div>
+                <div class="w-24 h-24 rounded-full bg-slate-800 border border-emerald-500/40 flex items-center justify-center z-10">
+                    <span id="countdownTimer" class="text-3xl font-black text-emerald-400">10</span>
+                </div>
+            </div>
+
+            <!-- Reflection Prompts -->
+            <div class="space-y-3 text-left bg-slate-800/40 p-4 rounded-2xl border border-slate-800">
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Self-Check Questions:</p>
+                
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" class="gateCheck rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 mt-0.5">
+                    <span class="text-xs text-slate-300">Can I solve this with 5 minutes of direct human thinking?</span>
+                </label>
+
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" class="gateCheck rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 mt-0.5">
+                    <span class="text-xs text-slate-300">Have I created an initial rough draft or attempt first?</span>
+                </label>
+
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" class="gateCheck rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 mt-0.5">
+                    <span class="text-xs text-slate-300">Is a standard search engine or documentation enough?</span>
+                </label>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 pt-2">
+                <button id="gateProceedBtn" disabled class="w-full py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-sm transition-all cursor-not-allowed">
+                    Wait for timer to complete...
+                </button>
+
+                <button id="gateTurnBackBtn" class="w-full py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-medium text-xs transition-colors">
+                    I'll try solving it myself first (Close)
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Default Mock Data in case LocalStorage is empty
+        const defaultLogs = [
+            { id: 1, tool: 'ChatGPT', duration: 15, category: 'Writing', intent: 'Reflex', notes: 'Quick rewrite of email', date: new Date().toISOString().split('T')[0] },
+            { id: 2, tool: 'Claude', duration: 25, category: 'Coding', intent: 'Necessary', notes: 'Complex SQL optimization query', date: new Date().toISOString().split('T')[0] },
+            { id: 3, tool: 'Perplexity', duration: 10, category: 'Search', intent: 'Necessary', notes: 'Market research stats', date: new Date(Date.now() - 86400000).toISOString().split('T')[0] }
+        ];
+
+        const defaultWins = [
+            { id: 1, text: 'Wrote full project README outline entirely by hand without AI drafting.', date: new Date().toISOString().split('T')[0] },
+            { id: 2, text: 'Debugged JS async issue using standard Chrome DevTools instead of asking Copilot.', date: new Date(Date.now() - 86400000).toISOString().split('T')[0] }
+        ];
+
+        // Core App State
+        let state = {
+            logs: JSON.parse(localStorage.getItem('unplug_ai_logs')) || defaultLogs,
+            wins: JSON.parse(localStorage.getItem('unplug_ai_wins')) || defaultWins,
+            dailyBudget: parseInt(localStorage.getItem('unplug_ai_budget')) || 20,
+            chartRange: '7'
+        };
+
+        let chartInstance = null;
+        let countdownInterval = null;
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initChart();
+            renderAll();
+            setupEventListeners();
+        });
+
+        // Save State to LocalStorage
+        function saveState() {
+            localStorage.setItem('unplug_ai_logs', JSON.stringify(state.logs));
+            localStorage.setItem('unplug_ai_wins', JSON.stringify(state.wins));
+            localStorage.setItem('unplug_ai_budget', state.dailyBudget.toString());
+        }
+
+        // Render Everything
+        function renderAll() {
+            renderMetrics();
+            renderLogs();
+            renderWins();
+            renderBadges();
+            updateChart();
+        }
+
+        // 1. Render Metrics Dashboard
+        function renderMetrics() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayLogs = state.logs.filter(l => l.date === todayStr);
+
+            const todayMins = todayLogs.reduce((acc, curr) => acc + curr.duration, 0);
+            const reflexCount = todayLogs.filter(l => l.intent === 'Reflex').length;
+            const reflexPct = todayLogs.length > 0 ? Math.round((reflexCount / todayLogs.length) * 100) : 0;
+
+            // Update DOM Elements
+            document.getElementById('statTodayTime').innerHTML = `${todayMins} <span class="text-sm font-normal text-slate-400">mins</span>`;
+            document.getElementById('statBudgetLabel').innerText = `${todayMins} / ${state.dailyBudget} mins`;
+            
+            const budgetPct = Math.min(Math.round((todayMins / state.dailyBudget) * 100), 100);
+            const budgetBar = document.getElementById('statBudgetBar');
+            budgetBar.style.width = `${budgetPct}%`;
+            
+            // Color budget bar based on strain
+            if (todayMins > state.dailyBudget) {
+                budgetBar.className = "bg-red-500 h-full transition-all duration-500";
+            } else if (todayMins > state.dailyBudget * 0.8) {
+                budgetBar.className = "bg-amber-500 h-full transition-all duration-500";
+            } else {
+                budgetBar.className = "bg-emerald-500 h-full transition-all duration-500";
+            }
+
+            document.getElementById('statReflexPct').innerText = `${reflexPct}%`;
+            document.getElementById('statReflexCount').innerText = `${reflexCount} out of ${todayLogs.length} today`;
+
+            // Calculate Human Streak (Consecutive days under budget)
+            const streak = calculateStreak();
+            document.getElementById('statStreak').innerHTML = `${streak} <span class="text-sm font-normal text-slate-400">days</span>`;
+
+            // Estimated Focus Time Saved (Calculated from intentional wins + reflex reductions)
+            const savedHours = ((state.wins.length * 20 + (100 - reflexPct) * 0.5) / 60).toFixed(1);
+            document.getElementById('statSavedTime').innerHTML = `${savedHours} <span class="text-sm font-normal text-slate-400">hrs</span>`;
+
+            // Budget slider sync
+            document.getElementById('budgetRange').value = state.dailyBudget;
+            document.getElementById('budgetValue').innerText = `${state.dailyBudget} mins`;
+        }
+
+        // Streak Calculation Logic
+        function calculateStreak() {
+            let currentStreak = 0;
+            let checkDate = new Date();
+
+            for (let i = 0; i < 30; i++) {
+                const dateStr = checkDate.toISOString().split('T')[0];
+                const dayLogs = state.logs.filter(l => l.date === dateStr);
+                const dayMins = dayLogs.reduce((acc, curr) => acc + curr.duration, 0);
+
+                if (dayMins <= state.dailyBudget) {
+                    currentStreak++;
+                } else if (i > 0) {
+                    break;
+                }
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            return currentStreak;
+        }
+
+        // 2. Render Activity Logs
+        function renderLogs() {
+            const container = document.getElementById('logsContainer');
+            container.innerHTML = '';
+
+            if (state.logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs">
+                        No AI usage logged yet. Click "Log Usage" to add your first entry!
+                    </div>
+                `;
+                return;
+            }
+
+            // Show latest 5 logs
+            const sortedLogs = [...state.logs].reverse().slice(0, 5);
+
+            sortedLogs.forEach(log => {
+                const isReflex = log.intent === 'Reflex';
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3.5 rounded-xl bg-slate-800/50 border border-slate-800 hover:border-slate-700 transition-all';
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg ${isReflex ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+                            <i data-lucide="${isReflex ? 'zap-off' : 'cpu'}" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm text-white">${log.tool}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full ${isReflex ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'} font-medium">${log.intent}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-0.5">${log.notes || log.category} • <span class="text-slate-500">${log.date}</span></p>
+                        </div>
+                    </div>
+                    <div class="text-right flex items-center gap-3">
+                        <span class="font-bold text-sm text-slate-200">${log.duration} mins</span>
+                        <button onclick="deleteLog(${log.id})" class="text-slate-500 hover:text-red-400 transition-colors p-1">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Delete Individual Log
+        window.deleteLog = function(id) {
+            state.logs = state.logs.filter(l => l.id !== id);
+            saveState();
+            renderAll();
+        };
+
+        // 3. Render Human Wins Journal
+        function renderWins() {
+            const container = document.getElementById('winsContainer');
+            container.innerHTML = '';
+
+            if (state.wins.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-slate-500 text-xs">
+                        No cognitive wins recorded. Log moments where you chose human effort over AI!
+                    </div>
+                `;
+                return;
+            }
+
+            [...state.wins].reverse().forEach(win => {
+                const div = document.createElement('div');
+                div.className = 'p-3 rounded-xl bg-slate-800/40 border border-slate-800/80 flex justify-between items-start gap-3';
+                div.innerHTML = `
+                    <div class="flex items-start gap-2.5">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <p class="text-xs text-slate-200">${win.text}</p>
+                            <span class="text-[10px] text-slate-500">${win.date}</span>
+                        </div>
+                    </div>
+                    <button onclick="deleteWin(${win.id})" class="text-slate-500 hover:text-red-400 transition-colors">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+
+            lucide.createIcons();
+        }
+
+        window.deleteWin = function(id) {
+            state.wins = state.wins.filter(w => w.id !== id);
+            saveState();
+            renderAll();
+        };
+
+        // 4. Render Badges & Challenges
+        function renderBadges() {
+            const badgesContainer = document.getElementById('badgesContainer');
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayLogs = state.logs.filter(l => l.date === todayStr);
+            const todayMins = todayLogs.reduce((a, b) => a + b.duration, 0);
+
+            const badges = [
+                {
+                    id: 'first_win',
+                    title: 'Human First',
+                    desc: 'Log your first cognitive win',
+                    unlocked: state.wins.length > 0,
+                    icon: 'brain'
+                },
+                {
+                    id: 'zero_reflex',
+                    title: 'Reflex Free',
+                    desc: 'Maintain 0% reflex usage today',
+                    unlocked: todayLogs.length > 0 && todayLogs.every(l => l.intent === 'Necessary'),
+                    icon: 'shield'
+                },
+                {
+                    id: 'under_budget',
+                    title: 'Budget Master',
+                    desc: 'Stay under daily AI limit',
+                    unlocked: todayMins <= state.dailyBudget && todayLogs.length > 0,
+                    icon: 'target'
+                },
+                {
+                    id: 'streak_3',
+                    title: 'Mindful Trio',
+                    desc: '3-day under-budget streak',
+                    unlocked: calculateStreak() >= 3,
+                    icon: 'zap'
+                }
+            ];
+
+            const unlockedCount = badges.filter(b => b.unlocked).length;
+            document.getElementById('badgeProgressCount').innerText = `${unlockedCount}/${badges.length} Unlocked`;
+
+            badgesContainer.innerHTML = '';
+            badges.forEach(b => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border flex items-center gap-3 ${b.unlocked ? 'bg-slate-800/80 border-amber-500/30' : 'bg-slate-900/40 border-slate-800/50 opacity-40'}`;
+                div.innerHTML = `
+                    <div class="p-2 rounded-lg ${b.unlocked ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-500'}">
+                        <i data-lucide="${b.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white">${b.title}</h4>
+                        <p class="text-[10px] text-slate-400 mt-0.5">${b.desc}</p>
+                    </div>
+                `;
+                badgesContainer.appendChild(div);
+            });
+
+            lucide.createIcons();
+        }
+
+        // 5. Chart.js Initialization & Updates
+        function initChart() {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Necessary (Mins)',
+                            data: [],
+                            backgroundColor: '#22c55e',
+                            borderRadius: 6,
+                        },
+                        {
+                            label: 'Reflex / Lazy (Mins)',
+                            data: [],
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            const daysCount = parseInt(state.chartRange);
+            const labels = [];
+            const necessaryData = [];
+            const reflexData = [];
+
+            for (let i = daysCount - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+                
+                labels.push(dayLabel);
+
+                const dayLogs = state.logs.filter(l => l.date === dateStr);
+                const necMins = dayLogs.filter(l => l.intent === 'Necessary').reduce((a, b) => a + b.duration, 0);
+                const refMins = dayLogs.filter(l => l.intent === 'Reflex').reduce((a, b) => a + b.duration, 0);
+
+                necessaryData.push(necMins);
+                reflexData.push(refMins);
+            }
+
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = necessaryData;
+            chartInstance.data.datasets[1].data = reflexData;
+            chartInstance.update();
+        }
+
+        // 6. Setup Modal Events & Listeners
+        function setupEventListeners() {
+            // Log Modal Controls
+            const logModal = document.getElementById('logModal');
+            const logModalCard = document.getElementById('logModalCard');
+
+            const openLogModal = () => {
+                logModal.classList.remove('opacity-0', 'pointer-events-none');
+                logModalCard.classList.remove('scale-95');
+            };
+
+            const closeLogModal = () => {
+                logModal.classList.add('opacity-0', 'pointer-events-none');
+                logModalCard.classList.add('scale-95');
+            };
+
+            document.getElementById('openLogModalBtn').addEventListener('click', openLogModal);
+            document.getElementById('closeLogModalBtn').addEventListener('click', closeLogModal);
+            document.getElementById('cancelLogBtn').addEventListener('click', closeLogModal);
+
+            // Log Form Submission
+            document.getElementById('logForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const tool = document.getElementById('logTool').value;
+                const duration = parseInt(document.getElementById('logDuration').value);
+                const category = document.getElementById('logCategory').value;
+                const intent = document.querySelector('input[name="logIntent"]:checked').value;
+                const notes = document.getElementById('logNotes').value;
+
+                const newLog = {
+                    id: Date.now(),
+                    tool,
+                    duration,
+                    category,
+                    intent,
+                    notes,
+                    date: new Date().toISOString().split('T')[0]
+                };
+
+                state.logs.push(newLog);
+                saveState();
+                renderAll();
+                closeLogModal();
+
+                // Reset Form
+                document.getElementById('logNotes').value = '';
+            });
+
+            // Human Win Submission
+            document.getElementById('winForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = document.getElementById('winInput');
+                if (!input.value.trim()) return;
+
+                state.wins.push({
+                    id: Date.now(),
+                    text: input.value.trim(),
+                    date: new Date().toISOString().split('T')[0]
+                });
+
+                input.value = '';
+                saveState();
+                renderAll();
+            });
+
+            // Daily Budget Slider Listener
+            document.getElementById('budgetRange').addEventListener('input', (e) => {
+                state.dailyBudget = parseInt(e.target.value);
+                saveState();
+                renderMetrics();
+                renderBadges();
+            });
+
+            // Chart Range Toggle Buttons
+            document.getElementById('chartRangeWeek').addEventListener('click', (e) => {
+                state.chartRange = '7';
+                e.target.className = "px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500 text-slate-950 transition-all";
+                document.getElementById('chartRangeMonth').className = "px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all";
+                updateChart();
+            });
+
+            document.getElementById('chartRangeMonth').addEventListener('click', (e) => {
+                state.chartRange = '30';
+                e.target.className = "px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500 text-slate-950 transition-all";
+                document.getElementById('chartRangeWeek').className = "px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all";
+                updateChart();
+            });
+
+            // Clear Data Button
+            document.getElementById('clearDataBtn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all logged AI usage data?')) {
+                    state.logs = [];
+                    state.wins = [];
+                    saveState();
+                    renderAll();
+                }
+            });
+
+            // Gate Simulator Logic
+            const gateModal = document.getElementById('gateModal');
+            const gateModalCard = document.getElementById('gateModalCard');
+            const countdownTimer = document.getElementById('countdownTimer');
+            const gateProceedBtn = document.getElementById('gateProceedBtn');
+
+            const launchGate = () => {
+                gateModal.classList.remove('opacity-0', 'pointer-events-none');
+                gateModalCard.classList.remove('scale-95');
+
+                let count = 10;
+                countdownTimer.innerText = count;
+                gateProceedBtn.disabled = true;
+                gateProceedBtn.className = "w-full py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-sm transition-all cursor-not-allowed";
+                gateProceedBtn.innerText = "Wait for timer to complete...";
+
+                // Reset Checkboxes
+                document.querySelectorAll('.gateCheck').forEach(c => c.checked = false);
+
+                clearInterval(countdownInterval);
+                countdownInterval = setInterval(() => {
+                    count--;
+                    countdownTimer.innerText = count;
+
+                    if (count <= 0) {
+                        clearInterval(countdownInterval);
+                        gateProceedBtn.disabled = false;
+                        gateProceedBtn.className = "w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20";
+                        gateProceedBtn.innerText = "Proceed to AI Tool Intentional Session";
+                    }
+                }, 1000);
+            };
+
+            const closeGate = () => {
+                clearInterval(countdownInterval);
+                gateModal.classList.add('opacity-0', 'pointer-events-none');
+                gateModalCard.classList.add('scale-95');
+            };
+
+            document.getElementById('mindfulGateBtn').addEventListener('click', launchGate);
+            document.getElementById('triggerGateWidgetBtn').addEventListener('click', launchGate);
+            document.getElementById('gateTurnBackBtn').addEventListener('click', closeGate);
+
+            gateProceedBtn.addEventListener('click', () => {
+                closeGate();
+                openLogModal(); // Opens log modal ready to start timer/track session
+            });
+        }
+    </script>
+</body>
+</html>
